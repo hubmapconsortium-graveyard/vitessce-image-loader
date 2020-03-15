@@ -7,7 +7,7 @@
   "browser": "dist/vitessce-image-loader.umd.js",
   "repository": {
     "type": "git",
-    "url": "github.com/manzt/vitessce-image-loader"
+    "url": "github.com/hubmapconsortium/vitessce-image-loader"
   },
   "scripts": {
     "build": "tsc --emitDeclarationOnly && rollup -c",
@@ -44,7 +44,8 @@
     "rollup": "^1.32.1",
     "ts-jest": "^25.2.1",
     "tslib": "^1.11.1",
-    "typescript": "^3.8.0"
+    "typescript": "^3.8.0",
+    "minimist": ">=1.2.2"
   },
   "prettier": {
     "trailingComma": "all",
