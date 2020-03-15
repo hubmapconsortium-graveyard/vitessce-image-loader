@@ -6,7 +6,7 @@ export function normalizeChannelSelection(
 ): number[] {
   const channelSelection: number[] = Array(dimensions.length).fill(0);
   const dimNames = dimensions.map(d => d.name);
-  for (const { id, index } of dimSelections) {
+  for (const { id, index } of dimSelections as DimensionSelection[]) {
     const normedId = typeof id === 'string' ? dimNames.indexOf(id) : id;
 
     if (normedId < 0) {
@@ -43,7 +43,7 @@ export function normalizeChannelSelection(
 
 export function guessRgb(shape: number[]): boolean {
   const lastDimSize = shape[shape.length - 1];
-  return shape.length > 2 && lastDimSize < 5 ? true : false;
+  return shape.length > 2 && (lastDimSize === 3 || lastDimSize === 4) ? true : false;
 }
 
 export function range(len: number): number[] {

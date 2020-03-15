@@ -111,25 +111,36 @@ export default class ZarrLoader implements ImageLoader {
     channelSelections = (Array.isArray(channelSelections[0])
       ? channelSelections
       : [channelSelections]) as (DimensionSelection | number)[][];
+
     const nextChannelSelections: number[][] = channelSelections.map(sel => {
-      if (sel.length === this.base.shape.length && sel.every(d => typeof d === 'number')) {
-        // e.g. sel === [4, 5, 0, 0]
-        return sel as number[];
-      } else if (this.dimensions) {
-        // e.g.
-        // sel === [{id: 'time', index: 3}, {id: 'stain', index: 'DAPI'}]
-        // sel === [{id: 0, index: 1, {id: 2, index: 50}]
-        return normalizeChannelSelection(this.dimensions, sel as DimensionSelection[]);
-      } else {
-        throw Error(
-          `Cannot set selection using '${sel}' for image with unlabeled dimensions.
-          Consider specifying labels or indexing image directly.`,
-        );
+      if (!this.dimensions) {
+        const isDirectSelection = sel.every(d => typeof d === 'number');
+        if (isDirectSelection) {
+          return sel as number[];
+        } else {
+          throw Error(
+            `Cannot used named selection '${sel}' to index image with specified dimensions.`,
+          );
+        }
       }
+      return normalizeChannelSelection(this.dimensions, sel as DimensionSelection[]);
     });
+
     if (this.isRgb && nextChannelSelections.length > 1) {
       throw Error('Cannot specify multiple channel selections for RGB/A image.');
     }
+
+    const allCorrectSize = nextChannelSelections.every(
+      sel => sel.length === this.base.shape.length,
+    );
+    if (!allCorrectSize) {
+      throw Error(
+        `Normalized selections ${JSON.stringify(
+          nextChannelSelections,
+        )} do not correspond to image with shape ${this.base.shape}`,
+      );
+    }
+
     this._channelSelections = nextChannelSelections;
   }
 
