@@ -39,8 +39,16 @@ export default class ZarrLoader implements ImageLoader {
     this.type = 'zarr';
     this.scale = scale;
     this.translate = translate;
-    this.dimensions = dimensions;
     this.isRgb = isRgb ? isRgb : guessRgb(base.shape);
+    if (dimensions && dimensions.length !== base.shape.length) {
+      // If provided, make sure that number of labeled dims corresponds to number of arr dims
+      throw Error(
+        `Dimension labels ${JSON.stringify(dimensions)} does not match image with shape ${
+          base.shape
+        }`,
+      );
+    }
+    this.dimensions = dimensions;
 
     // Private attributes
     this._data = data;
@@ -60,6 +68,10 @@ export default class ZarrLoader implements ImageLoader {
 
   public get base(): ZarrArray {
     return this.isPyramid ? (this._data as ZarrArray[])[0] : (this._data as ZarrArray);
+  }
+
+  public get channelSelections(): number[][] {
+    return this._channelSelections;
   }
 
   public get vivMetadata(): VivMetadata {

@@ -14,7 +14,7 @@ export abstract class ImageLoader {
 export interface TileIndex {
   x: number;
   y: number;
-  z: number;
+  z?: number;
 }
 
 export interface RasterIndex {
@@ -38,6 +38,10 @@ export interface Dimension {
   unit?: ValidDimensionUnit;
   values?: string[] | number[] | TypedArray;
 }
+export interface DimensionSelection {
+  id: string | number;
+  index: string | number;
+}
 
 export interface VivMetadata {
   imageWidth: number;
@@ -47,9 +51,4 @@ export interface VivMetadata {
   dtype: string;
   scale: number;
   translate: number[];
-}
-
-export interface DimensionSelection {
-  id: string | number;
-  index: string | number;
 }
