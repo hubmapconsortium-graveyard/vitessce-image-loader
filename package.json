@@ -54,10 +54,7 @@
     "printWidth": 100
   },
   "jest": {
-    "preset": "ts-jest",
-    "collectCoverageFrom": [
-      "src/**/{!(types|errors|index),}.ts"
-    ]
+    "preset": "ts-jest"
   },
   "dependencies": {
     "zarr": "^0.2.3"

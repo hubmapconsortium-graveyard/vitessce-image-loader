@@ -69,7 +69,7 @@ describe('Guess RGB/A', () => {
   });
 });
 
-describe('Test range util', () => {
+describe('Range util', () => {
   test.each([
     [0, []],
     [2, [0, 1]],
