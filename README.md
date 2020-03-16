@@ -33,7 +33,7 @@ const imageDimensions = [
     const loader = new ZarrLoader(z, imageDimensions);
     
     // Define which images to return
-    loader.setSelectionLoader([
+    loader.setChannelSelections([
         [{ id: "time", index: 0 }, { id: "stain", index: "A" }],
         [{ id: "time", index: 0 }, { id: "stain", index: "C" }],
     ]);
@@ -59,7 +59,7 @@ const imageDimensions = [
     const loader = new ZarrLoader(pyramid, imageDimensions);
     
     // Define which images to return
-    loader.setSelectionLoader([
+    loader.setChannelSelections([
         [{ id: "time", index: 0 }, { id: "stain", index: "A" }],
         [{ id: "time", index: 0 }, { id: "stain", index: "C" }],
     ]);
