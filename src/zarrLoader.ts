@@ -157,6 +157,8 @@ export default class ZarrLoader implements ImageLoader {
   }
 
   private _getSource(z?: number): ZarrArray {
-    return z && this.isPyramid ? (this._data as ZarrArray[])[z] : (this._data as ZarrArray);
+    return typeof z === 'number' && this.isPyramid
+      ? (this._data as ZarrArray[])[z]
+      : (this._data as ZarrArray);
   }
 }

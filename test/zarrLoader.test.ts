@@ -114,16 +114,16 @@ describe('Image pyramid, non-rgb', () => {
     const singleLayers = await Promise.all(singleLayerRequests);
     expect(singleLayers.map(l => l.length)).toStrictEqual([1, 1, 1]);
 
-    // loader.setChannelSelections([
-    //   [0, 0, 0],
-    //   [1, 0, 0],
-    //   [2, 0, 0],
-    //   [3, 0, 0],
-    // ]);
-    // const multiLayerRequests = [0, 1, 2].map(z => {
-    //   return loader.getTile({ x: 0, y: 0, z: z });
-    // });
-    // const multiLayers = await Promise.all(multiLayerRequests);
-    // expect(multiLayers.map(l => l.length)).toStrictEqual([4, 4, 4]);
+    loader.setChannelSelections([
+      [0, 0, 0],
+      [1, 0, 0],
+      [2, 0, 0],
+      [3, 0, 0],
+    ]);
+    const multiLayerRequests = [0, 1, 2].map(z => {
+      return loader.getTile({ x: 0, y: 0, z: z });
+    });
+    const multiLayers = await Promise.all(multiLayerRequests);
+    expect(multiLayers.map(l => l.length)).toStrictEqual([4, 4, 4]);
   });
 });
