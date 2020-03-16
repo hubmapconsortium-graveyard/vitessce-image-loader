@@ -1,4 +1,8 @@
 # vitessce-image-loader
+
+![Build Status](https://github.com/hubmapconsortium/vitessce-image-loader/workflows/build-test/badge.svg?branch=master)
+![Top Language Badge](https://img.shields.io/github/languages/top/hubmapconsortium/vitessce-image-loader)
+
 Utilities for loading single & multichannel zarr and tiff images
 
 ## Installation 
@@ -64,7 +68,7 @@ const imageDimensions = [
         [{ id: "time", index: 0 }, { id: "stain", index: "C" }],
     ]);
     
-    const tiles = await loader.getTile({ x: 0, y: z: 2 });
+    const tiles = await loader.getTile({ x: 0, y: 0, z: 2 });
     const rasters = await loader.getRaster({ z: 2 });
 })();
 ```
