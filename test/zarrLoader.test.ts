@@ -67,6 +67,18 @@ describe('2D image, non-rgb', () => {
     ).toThrow();
   });
 
+  test('Invalid loader dimensions', async () => {
+    expect(
+      () =>
+        new ZarrLoader(z, [
+          { name: 'channel', type: 'nominal', values: ['A', 'B'] },
+          { name: 'z', type: 'quantitative', unit: { size: 10, unit: 'micron' } },
+          { name: 'y', type: 'quantitative', unit: { size: 1, unit: 'micron' } },
+          { name: 'x', type: 'quantitative', unit: { size: 1, unit: 'micron' } },
+        ]),
+    ).toThrow();
+  });
+
   test('Set defined loader dimensions', async () => {
     const loader = new ZarrLoader(z, [
       { name: 'channel', type: 'nominal', values: ['A', 'B'] },
@@ -125,5 +137,34 @@ describe('Image pyramid, non-rgb', () => {
     });
     const multiLayers = await Promise.all(multiLayerRequests);
     expect(multiLayers.map(l => l.length)).toStrictEqual([4, 4, 4]);
+  });
+});
+
+describe('2D image Rgb', () => {
+  let z: ZarrArray;
+  beforeAll(async () => {
+    z = await zeros([2, 500, 250, 4], {
+      chunks: [1, 100, 100, 4],
+      dtype: '<i4',
+    });
+    await z.set(null, 42);
+  });
+
+  test('Test Rgb tile', async () => {
+    const loader = new ZarrLoader(z);
+    const [tile] = await loader.getTile({ x: 0, y: 0 });
+    expect(tile.length).toEqual(40000);
+
+    const [raster] = await loader.getRaster({});
+    expect(raster.length).toEqual(500000);
+  });
+
+  test('Throw if setting multiple channels on RGB', async () => {
+    const loader = new ZarrLoader(z);
+    const selection = [
+      [0, 0, 0, 0],
+      [1, 0, 0, 0],
+    ];
+    expect(() => loader.setChannelSelections(selection)).toThrow();
   });
 });

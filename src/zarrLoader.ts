@@ -52,7 +52,7 @@ export default class ZarrLoader implements ImageLoader {
 
     // Private attributes
     this._data = data;
-    if (isRgb) {
+    if (this.isRgb) {
       this._xIndex = base.shape.length - 2;
       this._yIndex = base.shape.length - 3;
     } else {
@@ -109,6 +109,7 @@ export default class ZarrLoader implements ImageLoader {
     const dataRequests = this._channelSelections.map(async (chunkKey: (number | null)[]) => {
       chunkKey[this._yIndex] = null;
       chunkKey[this._xIndex] = null;
+      if (this.isRgb) chunkKey[chunkKey.length - 1] = null;
       const { data } = (await source.getRaw(chunkKey)) as RawArray;
       return data;
     });
