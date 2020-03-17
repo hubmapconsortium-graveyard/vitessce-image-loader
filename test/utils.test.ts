@@ -1,4 +1,4 @@
-import { normalizeChannelSelection, guessRgb, range } from '../src/utils';
+import { normalizeChannelSelection, guessRgb, range, ensureDecreasing } from '../src/utils';
 import { Dimension, DimensionSelection } from '../src/types';
 
 describe('Normalized channel selections', () => {
@@ -80,5 +80,16 @@ describe('Range util', () => {
 
   test.each([[-1], [-10]])('Invalid lengths %s, expected %p', (input: number) => {
     expect(() => range(input)).toThrow();
+  });
+});
+
+describe('Ensure decreasing shape', () => {
+  test.each([
+    [[[4, 4, 4], [4, 1, 1]], true],
+    [[[4, 4, 4], [4, 4, 4]], false],
+    [[[4, 3, 4], [4, 4, 4]], false],
+    [[[5, 5, 5], [1, 5, 5]], true],
+  ])('Check strictly decreasing in size %s, expected %p', (input: number[][], expected: boolean) => {
+    expect(ensureDecreasing(input)).toEqual(expected);
   });
 });

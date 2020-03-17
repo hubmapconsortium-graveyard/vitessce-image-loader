@@ -138,6 +138,10 @@ describe('Image pyramid, non-rgb', () => {
     const multiLayers = await Promise.all(multiLayerRequests);
     expect(multiLayers.map(l => l.length)).toStrictEqual([4, 4, 4]);
   });
+
+  test('Throws error if array shapes not decreasing', () => {
+    expect(() => new ZarrLoader([z0, z2, z1])).toThrow();
+  });
 });
 
 describe('2D image Rgb', () => {
