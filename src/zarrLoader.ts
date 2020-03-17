@@ -104,7 +104,7 @@ export default class ZarrLoader implements ImageLoader {
     return data;
   }
 
-  public async getRaster({ z }: RasterIndex): Promise<TypedArray[]> {
+  public async getRaster({ z }: RasterIndex = { z: undefined }): Promise<TypedArray[]> {
     const source = this._getSource(z);
     const dataRequests = this._channelSelections.map(async (chunkKey: (number | null)[]) => {
       chunkKey[this._yIndex] = null;

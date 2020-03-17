@@ -39,7 +39,7 @@ describe('2D image, non-rgb', () => {
     expect(tile.length).toEqual(10000);
 
     // Basic raster index
-    const [raster] = await loader.getRaster({});
+    const [raster] = await loader.getRaster();
     expect(raster.length).toEqual(125000);
     expect(raster).toEqual(new Int32Array(125000).fill(42));
 
