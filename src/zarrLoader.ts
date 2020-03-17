@@ -8,7 +8,7 @@ import {
   RasterIndex,
   DimensionSelection,
 } from './types';
-import { guessRgb, normalizeChannelSelection } from './utils';
+import { guessRgb, normalizeChannelSelection, ensureDecreasing } from './utils';
 
 export default class ZarrLoader implements ImageLoader {
   public type: string;
@@ -31,6 +31,10 @@ export default class ZarrLoader implements ImageLoader {
   ) {
     let base;
     if (Array.isArray(data)) {
+      const allDecreasing = ensureDecreasing(data.map(d => d.shape));
+      if (!allDecreasing) {
+        throw Error("Arrays provided must be decreasing in shape")
+      }
       [base] = data;
     } else {
       base = data;
