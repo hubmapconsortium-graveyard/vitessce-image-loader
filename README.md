@@ -8,7 +8,7 @@ Utilities for loading single & multichannel zarr and tiff images
 ## Installation 
 
 ```bash
-$ npm install @hubmap/vitessce-image-viewer
+$ npm install @hubmap/vitessce-image-loader
 ```
 
 ## Usage
