@@ -65,6 +65,8 @@ describe('2D image, non-rgb', () => {
         [1, 2, 3, 4, 5],
       ]),
     ).toThrow();
+    // can't set x/y chunk selection
+    expect(() => loader.setChannelSelections([0, 1, 1])).toThrow();
   });
 
   test('Invalid loader dimensions', async () => {
@@ -170,5 +172,55 @@ describe('2D image Rgb', () => {
       [1, 0, 0, 0],
     ];
     expect(() => loader.setChannelSelections(selection)).toThrow();
+  });
+});
+
+describe('2D image, decode multi channel with chunksize > 1', () => {
+  let z0: ZarrArray, z1: ZarrArray;
+  beforeAll(async () => {
+    z0 = await zeros([4, 50, 55], {
+      chunks: [4, 10, 10],
+      dtype: '<i4',
+    });
+
+    for (let i = 0; i < 4; i++) {
+      await z0.set([i, null, null], i);
+    }
+
+    z1 = await zeros([3, 3, 20, 23], {
+      chunks: [1, 3, 10, 10],
+      dtype: '<i4',
+    });
+    for (let i = 0; i < 3; i++) {
+      await z1.set([i, null, null, null], i);
+    }
+  });
+
+  test('Decode multichannel & throw when trying to set dimensions', async () => {
+    const loader = new ZarrLoader(z0);
+    expect(await loader.getTile({ x: 0, y: 0 })).toEqual(
+      [0, 1, 2, 3].map(d => new Int32Array(10 * 10).fill(d)),
+    );
+    expect(await loader.getRaster()).toEqual(
+      [0, 1, 2, 3].map(d => new Int32Array(50 * 55).fill(d)),
+    );
+    expect(() => loader.setChannelSelections([1, 0, 0])).toThrow();
+  });
+
+  test('Can set selection and decode along single axis', async () => {
+    const loader = new ZarrLoader(z1);
+    for (let i = 0; i < 3; i++) {
+      loader.setChannelSelections([i, 0, 0, 0]);
+      expect(await loader.getTile({ x: 0, y: 0 })).toEqual(
+        Array(3).fill(new Int32Array(10 * 10).fill(i)),
+      );
+      expect(await loader.getRaster()).toEqual(Array(3).fill(new Int32Array(20 * 23).fill(i)));
+      expect(() =>
+        loader.setChannelSelections([
+          [0, 0, 0, 0],
+          [1, 0, 0, 0],
+        ]),
+      ).toThrow();
+    }
   });
 });
