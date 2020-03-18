@@ -51,11 +51,11 @@ export function range(len: number): number[] {
 }
 
 export function ensureDecreasing(shapes: number[][]): boolean {
-  const sizes = shapes.map(shape => shape.reduce((a, b) => a * b, 1))
+  const sizes = shapes.map(shape => shape.reduce((a, b) => a * b, 1));
   let prevSize = Infinity;
   for (const size of sizes) {
-    if (size >= prevSize) return false
+    if (size >= prevSize) return false;
     prevSize = size;
   }
-  return true
+  return true;
 }

@@ -8,7 +8,7 @@ import {
   RasterIndex,
   DimensionSelection,
 } from './types';
-import { guessRgb, normalizeChannelSelection, ensureDecreasing } from './utils';
+import { guessRgb, normalizeChannelSelection, ensureDecreasing, range } from './utils';
 
 export default class ZarrLoader implements ImageLoader {
   public type: string;
@@ -33,7 +33,7 @@ export default class ZarrLoader implements ImageLoader {
     if (Array.isArray(data)) {
       const allDecreasing = ensureDecreasing(data.map(d => d.shape));
       if (!allDecreasing) {
-        throw Error("Arrays provided must be decreasing in shape")
+        throw Error('Arrays provided must be decreasing in shape');
       }
       [base] = data;
     } else {
@@ -105,6 +105,10 @@ export default class ZarrLoader implements ImageLoader {
       return data;
     });
     const data = await Promise.all(dataRequests);
+    if (this._isUnchunkedMultiChannel) {
+      // data is an array of length 1
+      return this._decodeChannels(data[0]);
+    }
     return data;
   }
 
@@ -113,11 +117,18 @@ export default class ZarrLoader implements ImageLoader {
     const dataRequests = this._channelSelections.map(async (chunkKey: (number | null)[]) => {
       chunkKey[this._yIndex] = null;
       chunkKey[this._xIndex] = null;
-      if (this.isRgb) chunkKey[chunkKey.length - 1] = null;
+      if (this.isRgb) {
+        chunkKey[chunkKey.length - 1] = null;
+      } else if (this._isUnchunkedMultiChannel) {
+        chunkKey[this._yIndex - 1] = null;
+      }
       const { data } = (await source.getRaw(chunkKey)) as RawArray;
       return data;
     });
     const data = await Promise.all(dataRequests);
+    if (this._isUnchunkedMultiChannel) {
+      return this._decodeChannels(data[0]);
+    }
     return data;
   }
 
@@ -143,27 +154,47 @@ export default class ZarrLoader implements ImageLoader {
       return normalizeChannelSelection(this.dimensions, sel as DimensionSelection[]);
     });
 
-    if (this.isRgb && nextChannelSelections.length > 1) {
-      throw Error('Cannot specify multiple channel selections for RGB/A image.');
-    }
-
-    const allCorrectSize = nextChannelSelections.every(
-      sel => sel.length === this.base.shape.length,
-    );
-    if (!allCorrectSize) {
+    if ((this.isRgb || this._isUnchunkedMultiChannel) && nextChannelSelections.length > 1) {
       throw Error(
-        `Normalized selections ${JSON.stringify(
-          nextChannelSelections,
-        )} do not correspond to image with shape ${this.base.shape}`,
+        `Cannot specify multiple channel selections for RGB/A image or
+        multichannel image with chunk sizes greater than one.`,
       );
     }
 
+    // Validate selections
+    for (const sel of nextChannelSelections) {
+      if (sel.length !== this.base.shape.length) {
+        throw Error(
+          `Normalized selections ${nextChannelSelections} do not
+          correspond to image with shape ${this.base.shape}`,
+        );
+      }
+      if (sel.some((key, i) => key !== 0 && this.base.chunks[i] > 1)) {
+        throw Error('Cannot set selection for dimension with chunk size greater than one.');
+      }
+    }
+
     this._channelSelections = nextChannelSelections;
+  }
+
+  private get _isUnchunkedMultiChannel(): boolean {
+    return this._yIndex - 1 >= 0 ? this.base.chunks[this._yIndex - 1] > 1 : false;
   }
 
   private _getSource(z?: number): ZarrArray {
     return typeof z === 'number' && this.isPyramid
       ? (this._data as ZarrArray[])[z]
       : (this._data as ZarrArray);
+  }
+
+  private _decodeChannels(chunkData: TypedArray): TypedArray[] {
+    // Used for multichannel images where channels are in same chunk.
+    // Separates single TypedArray into multiple channel views.
+    const channelChunkSize = this.base.chunks[this._yIndex - 1];
+    const offset = chunkData.length / channelChunkSize;
+    const tileData = range(channelChunkSize).map(i =>
+      chunkData.subarray(offset * i, offset * i + offset),
+    );
+    return tileData;
   }
 }
