@@ -16,22 +16,11 @@ describe('2D image, non-rgb', () => {
   test('Check basic unlabeled loader', async () => {
     const loader = new ZarrLoader(z);
     expect(loader.dimensions).toBe(undefined);
-    const {
-      minZoom,
-      dtype,
-      scale,
-      translate,
-      tileSize,
-      imageHeight,
-      imageWidth,
-    } = loader.vivMetadata;
-    expect(minZoom).toEqual(0);
+    const { dtype, scale, translate, tileSize } = loader;
     expect(dtype).toEqual('<i4');
     expect(scale).toEqual(1);
     expect(translate).toEqual([0, 0]);
     expect(tileSize).toEqual(100);
-    expect(imageHeight).toEqual(500);
-    expect(imageWidth).toEqual(250);
 
     // Basic tile indexing
     const [tile] = await loader.getTile({ x: 0, y: 0 });
@@ -39,9 +28,12 @@ describe('2D image, non-rgb', () => {
     expect(tile.length).toEqual(10000);
 
     // Basic raster index
-    const [raster] = await loader.getRaster();
-    expect(raster.length).toEqual(125000);
-    expect(raster).toEqual(new Int32Array(125000).fill(42));
+    const { data, width, height } = await loader.getRaster();
+    expect(data.length).toEqual(1);
+    expect(data[0].length).toEqual(125000);
+    expect(data[0]).toEqual(new Int32Array(125000).fill(42));
+    expect(width).toEqual(250);
+    expect(height).toEqual(500);
 
     // Get multiple Tiles
     const selections = [
@@ -161,8 +153,11 @@ describe('2D image Rgb', () => {
     const [tile] = await loader.getTile({ x: 0, y: 0 });
     expect(tile.length).toEqual(40000);
 
-    const [raster] = await loader.getRaster({});
-    expect(raster.length).toEqual(500000);
+    const { data, width, height } = await loader.getRaster();
+    expect(data.length).toEqual(1);
+    expect(data[0].length).toEqual(500000);
+    expect(width).toEqual(250);
+    expect(height).toEqual(500);
   });
 
   test('Throw if setting multiple channels on RGB', async () => {
@@ -201,9 +196,11 @@ describe('2D image, decode multi channel with chunksize > 1', () => {
     expect(await loader.getTile({ x: 0, y: 0 })).toEqual(
       [0, 1, 2, 3].map(d => new Int32Array(10 * 10).fill(d)),
     );
-    expect(await loader.getRaster()).toEqual(
-      [0, 1, 2, 3].map(d => new Int32Array(50 * 55).fill(d)),
-    );
+    expect(await loader.getRaster()).toEqual({
+      data: [0, 1, 2, 3].map(d => new Int32Array(50 * 55).fill(d)),
+      width: 55,
+      height: 50,
+    });
     expect(() => loader.setChannelSelections([1, 0, 0])).toThrow();
   });
 
@@ -214,7 +211,11 @@ describe('2D image, decode multi channel with chunksize > 1', () => {
       expect(await loader.getTile({ x: 0, y: 0 })).toEqual(
         Array(3).fill(new Int32Array(10 * 10).fill(i)),
       );
-      expect(await loader.getRaster()).toEqual(Array(3).fill(new Int32Array(20 * 23).fill(i)));
+      expect(await loader.getRaster()).toEqual({
+        data: Array(3).fill(new Int32Array(20 * 23).fill(i)),
+        height: 20,
+        width: 23,
+      });
       expect(() =>
         loader.setChannelSelections([
           [0, 0, 0, 0],

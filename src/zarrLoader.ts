@@ -3,12 +3,14 @@ import { RawArray } from 'zarr/dist/types/rawArray';
 import {
   Dimension,
   ImageLoader,
-  VivMetadata,
   TileIndex,
   RasterIndex,
   DimensionSelection,
+  TileData,
+  RasterData,
 } from './types';
 import { guessRgb, normalizeChannelSelection, ensureDecreasing, range } from './utils';
+import { DtypeString } from 'zarr/dist/types/types';
 
 export default class ZarrLoader implements ImageLoader {
   public type: string;
@@ -16,6 +18,9 @@ export default class ZarrLoader implements ImageLoader {
   public scale: number;
   public translate: number[];
   public dimensions?: Dimension[];
+  public dtype: DtypeString;
+  public tileSize: number;
+  public numLevels: number;
 
   private _xIndex: number;
   private _yIndex: number;
@@ -36,8 +41,10 @@ export default class ZarrLoader implements ImageLoader {
         throw Error('Arrays provided must be decreasing in shape');
       }
       [base] = data;
+      this.numLevels = data.length;
     } else {
       base = data;
+      this.numLevels = 1;
     }
     // Public attributes
     this.type = 'zarr';
@@ -64,6 +71,11 @@ export default class ZarrLoader implements ImageLoader {
       this._yIndex = base.shape.length - 2;
     }
     this._channelSelections = [Array(base.shape.length).fill(0)];
+
+    const { dtype, chunks } = base;
+    this.dtype = dtype;
+    // TODO: check if x and y chunk sizes are different?
+    this.tileSize = chunks[this._xIndex];
   }
 
   public get isPyramid(): boolean {
@@ -78,25 +90,7 @@ export default class ZarrLoader implements ImageLoader {
     return this._channelSelections;
   }
 
-  public get vivMetadata(): VivMetadata {
-    const base = this.base;
-    const { dtype } = base;
-    const imageHeight = base.shape[this._yIndex];
-    const imageWidth = base.shape[this._xIndex];
-    const tileSize = base.chunks[this._xIndex];
-    const minZoom = this.isPyramid ? -this._data.length : 0;
-    return {
-      imageWidth,
-      imageHeight,
-      tileSize,
-      minZoom,
-      dtype,
-      scale: this.scale,
-      translate: this.translate,
-    };
-  }
-
-  public async getTile({ x, y, z }: TileIndex): Promise<TypedArray[]> {
+  public async getTile({ x, y, z }: TileIndex): Promise<TileData> {
     const source = this._getSource(z);
     const dataRequests = this._channelSelections.map(async key => {
       const chunkKey = [...key];
@@ -113,9 +107,10 @@ export default class ZarrLoader implements ImageLoader {
     return data;
   }
 
-  public async getRaster({ z }: RasterIndex = { z: undefined }): Promise<TypedArray[]> {
+  public async getRaster({ z }: RasterIndex = { z: undefined }): Promise<RasterData> {
     const source = this._getSource(z);
-    const dataRequests = this._channelSelections.map(async (chunkKey: (number | null)[]) => {
+    const dataRequests = this._channelSelections.map(async (key: (number | null)[]) => {
+      const chunkKey = [...key];
       chunkKey[this._yIndex] = null;
       chunkKey[this._xIndex] = null;
       if (this.isRgb) {
@@ -127,10 +122,23 @@ export default class ZarrLoader implements ImageLoader {
       return data;
     });
     const data = await Promise.all(dataRequests);
+    const { shape } = source;
+    const width = shape[this._xIndex];
+    const height = shape[this._yIndex];
     if (this._isUnchunkedMultiChannel) {
-      return this._decodeChannels(data[0]);
+      return { data: this._decodeChannels(data[0]), width, height };
     }
-    return data;
+    return { data, width, height };
+  }
+
+  public onTileError(err: Error): void {
+    // Handle zarr-specific tile Errors
+    // Will check with `err instanceof BoundCheckError` when merged
+    // https://github.com/gzuidhof/zarr.js/issues/47
+    if (!err.message.includes('RangeError')) {
+      // Rethrow error if something other than tile being requested is out of bounds.
+      throw err;
+    }
   }
 
   public setChannelSelections(

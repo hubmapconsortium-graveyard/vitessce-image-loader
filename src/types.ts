@@ -1,16 +1,27 @@
 import { TypedArray } from 'zarr';
+import { DtypeString } from 'zarr/dist/types/types';
 
 export abstract class ImageLoader {
   abstract type: string;
-  abstract vivMetadata: VivMetadata;
   abstract isPyramid: boolean;
   abstract isRgb: boolean;
   abstract scale: number;
   abstract translate: number[];
-  abstract getTile({ x, y, z }: TileIndex): Promise<TypedArray[]> | TypedArray[];
-  abstract getRaster({ z }: RasterIndex): Promise<TypedArray[]> | TypedArray[];
+  abstract dtype: DtypeString;
+  abstract tileSize: number;
+  abstract numLevels: number;
+  abstract getTile({ x, y, z }: TileIndex): Promise<TileData> | TileData;
+  abstract getRaster({ z }: RasterIndex): Promise<RasterData> | RasterData;
+  abstract onTileError(err: Error): void;
 }
 
+export type TileData = TypedArray[];
+
+export interface RasterData {
+  data: TileData;
+  width: number;
+  height: number;
+}
 export interface TileIndex {
   x: number;
   y: number;
@@ -41,14 +52,4 @@ export interface Dimension {
 export interface DimensionSelection {
   id: string | number;
   index: string | number;
-}
-
-export interface VivMetadata {
-  imageWidth: number;
-  imageHeight: number;
-  tileSize: number;
-  minZoom: number;
-  dtype: string;
-  scale: number;
-  translate: number[];
 }
