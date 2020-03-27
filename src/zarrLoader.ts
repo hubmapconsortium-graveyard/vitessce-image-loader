@@ -98,7 +98,8 @@ export default class ZarrLoader implements ImageLoader {
 
   public async getTile({ x, y, z }: TileIndex): Promise<TypedArray[]> {
     const source = this._getSource(z);
-    const dataRequests = this._channelSelections.map(async chunkKey => {
+    const dataRequests = this._channelSelections.map(async key => {
+      const chunkKey = [...key];
       chunkKey[this._yIndex] = y;
       chunkKey[this._xIndex] = x;
       const { data } = await source.getRawChunk(chunkKey);
